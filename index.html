@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Miso the AI Cat</title>
+<style>
+:root{--bg:#f3e9d8;--ink:#3a2e26;--card:#fff8ec;--fur:#e8a24b;--fur2:#c97d2a;--bar:#7a9e7e;--btn:#3a2e26;--btnt:#fff8ec;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1a2b;--ink:#f1e6d4;--card:#2a2640;--bar:#8fc096;--btn:#f1e6d4;--btnt:#1d1a2b}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 "Trebuchet MS",Verdana,sans-serif;display:flex;flex-direction:column;align-items:center;padding:12px}
+h1{font:700 22px "Georgia",serif;margin:4px 0}
+.bars{display:flex;gap:8px;width:100%;max-width:420px}
+.bar{flex:1;font-size:12px}.bar i{display:block;height:8px;border-radius:4px;background:rgba(128,128,128,.3);overflow:hidden;margin-top:3px}.bar b{display:block;height:100%;background:var(--bar);transition:width .4s}
+#stage{width:100%;max-width:420px;background:var(--card);border-radius:24px;margin:10px 0;padding:8px;text-align:center}
+svg{width:240px;max-width:80%;touch-action:manipulation}
+#cat{cursor:pointer}
+.sleep #eyes{display:none}.sleep #closed{display:block!important}
+.happy #mouth{d:path("M92 118 Q100 130 108 118")}
+@keyframes bob{50%{transform:translateY(-5px)}}
+#cat{animation:bob 3s ease-in-out infinite;transform-origin:center}
+@media (prefers-reduced-motion:reduce){#cat{animation:none}}
+#say{min-height:44px;font-size:15px;padding:4px 10px}
+.row{display:flex;gap:8px;width:100%;max-width:420px}
+button{flex:1;padding:12px 6px;border:0;border-radius:14px;background:var(--btn);color:var(--btnt);font:inherit;font-weight:700}
+button:focus-visible,input:focus-visible{outline:3px solid var(--fur);outline-offset:2px}
+#chat{display:flex;gap:8px;width:100%;max-width:420px;margin-top:8px}
+input{flex:1;padding:12px;border-radius:14px;border:2px solid var(--fur);background:var(--card);color:var(--ink);font:inherit;min-width:0}
+#chat button{flex:0 0 auto}
+small{opacity:.7;margin-top:8px;max-width:420px;text-align:center}
+</style>
+</head>
+<body>
+<h1>Miso</h1>
+<div class="bars">
+<div class="bar">Hunger<i><b id="b-hunger"></b></i></div>
+<div class="bar">Energy<i><b id="b-energy"></b></i></div>
+<div class="bar">Love<i><b id="b-love"></b></i></div>
+</div>
+<div id="stage">
+<svg id="cat" viewBox="0 0 200 200" role="img" aria-label="Miso the cat">
+<path d="M150 160 Q195 150 182 105" fill="none" stroke="#c97d2a" stroke-width="14" stroke-linecap="round"/>
+<ellipse cx="100" cy="150" rx="52" ry="38" fill="#e8a24b"/>
+<polygon points="52,70 58,22 90,52" fill="#e8a24b"/><polygon points="148,70 142,22 110,52" fill="#e8a24b"/>
+<polygon points="60,60 62,38 78,52" fill="#f6c9c0"/><polygon points="140,60 138,38 122,52" fill="#f6c9c0"/>
+<circle cx="100" cy="88" r="50" fill="#e8a24b"/>
+<path d="M88 44 v14 M100 40 v16 M112 44 v14" stroke="#c97d2a" stroke-width="5" stroke-linecap="round"/>
+<g id="eyes"><ellipse cx="80" cy="88" rx="8" ry="10" fill="#3a2e26"/><ellipse cx="120" cy="88" rx="8" ry="10" fill="#3a2e26"/><circle cx="83" cy="84" r="3" fill="#fff"/><circle cx="123" cy="84" r="3" fill="#fff"/></g>
+<g id="closed" style="display:none" stroke="#3a2e26" stroke-width="3" fill="none" stroke-linecap="round"><path d="M70 90 Q80 98 90 90"/><path d="M110 90 Q120 98 130 90"/></g>
+<polygon points="95,102 105,102 100,109" fill="#d9776b"/>
+<path id="mouth" d="M92 116 Q100 122 108 116" fill="none" stroke="#3a2e26" stroke-width="3" stroke-linecap="round"/>
+<path d="M60 104 h-26 M60 112 h-24 M140 104 h26 M140 112 h24" stroke="#3a2e26" stroke-width="2" stroke-linecap="round"/>
+</svg>
+<div id="say" aria-live="polite">Mew?</div>
+</div>
+<div class="row">
+<button id="feed">Feed</button><button id="play">Play</button><button id="nap">Nap</button>
+</div>
+<form id="chat" onsubmit="return false">
+<input id="msg" placeholder="Talk to Miso…" autocomplete="off" aria-label="Message">
+<button id="send" type="button">Send</button>
+</form>
+<section id="clean" style="width:100%;max-width:420px;margin-top:10px">
+<button id="scan" type="button" style="width:100%">Miso, scan my phone for junk</button>
+<div id="junk" style="margin:8px 0;font-size:14px"></div>
+<button id="del" type="button" style="width:100%;display:none">Delete selected</button>
+</section>
+<script>
+function mb(b){return (b/1048576).toFixed(1)+" MB"}
+var items=[];
+document.getElementById("scan").onclick=function(){
+ if(!window.Android){speak("Cleaning only works in the Android app.");return}
+ if(!Android.hasAccess()){speak("I need 'All files access'. Allow it, then come back.");Android.requestAccess();return}
+ items=JSON.parse(Android.scan());var j=document.getElementById("junk");
+ if(!items.length){j.textContent="Nothing to clean. Purr!";speak("Your phone is spotless!");return}
+ var tot=0;j.innerHTML="";
+ items.forEach(function(it,i){tot+=it.size;var l=document.createElement("label");l.style.display="block";
+  l.innerHTML='<input type="checkbox" checked data-i="'+i+'"> '+it.why+": "+it.path.split("/").pop()+" ("+mb(it.size)+")";j.appendChild(l)});
+ speak("I found "+mb(tot)+" of junk. Untick anything you want to keep.");
+ document.getElementById("del").style.display="block"};
+document.getElementById("del").onclick=function(){
+ var sel=[];document.querySelectorAll("#junk input:checked").forEach(function(c){sel.push(items[c.dataset.i].path)});
+ if(!sel.length)return;var f=Android.delete(JSON.stringify(sel));
+ S.hunger=Math.min(100,S.hunger+30);S.love+=10;speak("Cleaned "+mb(f)+"! Now I'm happy.");
+ document.getElementById("junk").textContent="";document.getElementById("del").style.display="none";render()};
+</script>
+<small>Miso learns what you do most and what you call her. Add this page to your home screen to keep her.</small>
+<script>
+var S={hunger:60,energy:70,love:50,feeds:0,plays:0,pets:0,naps:0,name:"",last:Date.now(),talk:0};
+try{var raw=localStorage.getItem("miso");if(raw)S=Object.assign(S,JSON.parse(raw))}catch(e){}
+var now=Date.now(),hrs=Math.min((now-S.last)/36e5,24);
+S.hunger=Math.max(0,S.hunger-hrs*6);S.love=Math.max(0,S.love-hrs*3);S.energy=Math.min(100,S.energy+hrs*4);S.last=now;
+var $=function(i){return document.getElementById(i)},cat=$("cat"),say=$("say");
+function clamp(v){return Math.max(0,Math.min(100,v))}
+function save(){S.last=Date.now();try{localStorage.setItem("miso",JSON.stringify(S))}catch(e){}}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function mood(){if(S.hunger<25)return"hungry";if(S.energy<20)return"tired";if(S.love<25)return"lonely";if(S.love>75&&S.hunger>50)return"happy";return"ok"}
+function fav(){var m=Math.max(S.feeds,S.plays,S.naps,S.pets);if(m<3)return"";return m==S.feeds?"food":m==S.plays?"play":m==S.pets?"cuddles":"naps"}
+function render(){["hunger","energy","love"].forEach(function(k){S[k]=clamp(S[k]);$("b-"+k).style.width=S[k]+"%"});
+cat.classList.toggle("happy",mood()=="happy");document.body.classList.toggle("sleep",S.energy<15);save()}
+function speak(t){say.textContent=t}
+function nm(){return S.name||"human"}
+var lines={hungry:["My tummy is making noises. Feed me?","Food. Now. Please.","I could eat a whole fish."],tired:["Yawn… I need a nap.","Too sleepy to play."],lonely:["I missed you, "+"%n"+".","Pet me, I feel ignored."],happy:["Purr purr. Life is good!","You are my favorite, %n."],ok:["Mew?","*stretches*","What shall we do, %n?"]};
+function mood_line(){return pick(lines[mood()]).replace("%n",nm())}
+$("feed").onclick=function(){if(S.hunger>90){speak("I'm stuffed! Maybe play instead?");return}S.hunger+=25;S.love+=3;S.feeds++;speak(pick(["Nom nom nom!","Delicious. You know me well.","Fish! My favorite."]));render()};
+$("play").onclick=function(){if(S.energy<15){speak("Too tired… let me nap first.");return}S.energy-=15;S.love+=10;S.hunger-=8;S.plays++;speak(pick(["*pounces* Got it!","Again again!","Chasing the red dot!"]));render()};
+$("nap").onclick=function(){S.energy+=35;S.hunger-=5;S.naps++;speak("Zzz… *curls up*");render()};
+cat.onclick=function(){S.love+=4;S.pets++;speak(S.pets%5==0?"Purrrrrr… "+mood_line():pick(["Prrr.","Mrrow!","*headbutt*"]));render()};
+function reply(t){var l=t.toLowerCase(),m;
+if(m=l.match(/(?:my name is|i am|i'm|call me)\s+([a-z]+)/)){S.name=m[1][0].toUpperCase()+m[1].slice(1);S.love+=5;return"Nice to meet you, "+S.name+". I'll remember that."}
+if(/hungry|food|eat|fish|treat/.test(l))return S.hunger<40?"Yes! Feed me!":"I'm okay on food, but I won't say no.";
+if(/hello|hi\b|hey/.test(l))return"Mew! Hi "+nm()+"! "+mood_line();
+if(/love|good|cute|best/.test(l)){S.love+=6;return"Purrrr. I love you too."}
+if(/bad|stupid|hate/.test(l)){S.love-=5;return"Hmph. *turns away*"}
+if(/how are you|how do you feel|mood/.test(l))return"I feel "+mood()+". "+(fav()?"I like "+fav()+" the most.":"");
+if(/favou?rite|like most/.test(l))return fav()?"You give me lots of "+fav()+", so that's my favorite!":"Ask me again after we spend more time together.";
+if(/sleep|tired|nap/.test(l))return S.energy<50?"Yes please, nap time.":"I have energy! Let's play.";
+if(/joke/.test(l))return pick(["Why do cats make bad storytellers? They only have one tail.","What do you call a pile of cats? A meowtain."]);
+if(/\?$/.test(t))return pick(["Hmm, I'm just a cat. But I think yes.","Mew… ask the dog, I wouldn't know.","I'd say no. Cats are always right though."]);
+return pick(["Mrow.","*tilts head* Tell me more.","Interesting, "+nm()+". Can we play now?",mood_line()])}
+function send(){var v=$("msg").value.trim();if(!v)return;$("msg").value="";S.talk++;speak(reply(v));render()}
+$("send").onclick=send;$("msg").onkeydown=function(e){if(e.key=="Enter")send()};
+setInterval(function(){S.hunger-=1;S.energy+=S.energy<100&&document.body.classList.contains("sleep")?3:-1;S.love-=.5;render()},30000);
+speak(S.name?"Welcome back, "+S.name+". "+mood_line():mood_line());render();
+</script>
+</body>
+</html>
